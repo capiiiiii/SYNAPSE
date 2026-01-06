@@ -1,4 +1,4 @@
-# Proyecto SO Open Source
+# SYNAPSE SO Open Source
 Visión: Un sistema operativo moderno, ligero y eficiente, optimizado para gaming, privacidad y compatibilidad multiplataforma. El proyecto está diseñado para ser auditable, colaborativo y seguro, utilizando herramientas automáticas y revisión manual para garantizar calidad.
 
 Objetivos del Proyecto:
