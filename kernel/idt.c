@@ -5,6 +5,7 @@
 #include <kernel/vga.h>
 #include <kernel/io.h>
 #include <kernel/gdt.h>
+#include <kernel/vmm.h>
 
 /* IDT entry structure (for 32-bit) */
 typedef struct {
@@ -95,15 +96,24 @@ static void idt_set_gate(unsigned char num, unsigned int base,
 void isr_handler(registers_t *regs) {
     /* Identify which interrupt occurred */
     if (regs->int_no < 32) {
-        /* Prevent further interrupts while we print halt message to avoid reentrancy */
-        __asm__ __volatile__("cli");
-        vga_print("\n[EXCEPTION] ");
-        vga_print_dec(regs->int_no);
-        vga_print(" - Error Code: ");
-        vga_print_hex(regs->err_code);
-        vga_print("\nKernel Halted.\n");
-        while (1) {
-            __asm__ __volatile__("hlt");
+        /* Exception handling */
+        switch (regs->int_no) {
+            case 14: /* Page fault */
+                vmm_page_fault_handler(regs->err_code);
+                break;
+
+            default:
+                /* Prevent further interrupts while we print halt message */
+                __asm__ __volatile__("cli");
+                vga_print("\n[EXCEPTION] ");
+                vga_print_dec(regs->int_no);
+                vga_print(" - Error Code: ");
+                vga_print_hex(regs->err_code);
+                vga_print("\nKernel Halted.\n");
+                while (1) {
+                    __asm__ __volatile__("hlt");
+                }
+                break;
         }
     } else if (regs->int_no >= 32 && regs->int_no <= 47) {
         /* IRQ handling */
