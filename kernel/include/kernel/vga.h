@@ -4,6 +4,10 @@
 #ifndef KERNEL_VGA_H
 #define KERNEL_VGA_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* VGA dimensions */
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
@@ -33,5 +37,9 @@ void vga_put_char(char c);
 void vga_print(const char* str);
 void vga_print_dec(unsigned int num);
 void vga_print_hex(unsigned int num);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* KERNEL_VGA_H */
