@@ -62,16 +62,7 @@ ISR_NOERRCODE 29  ; Reserved
 ISR_NOERRCODE 30  ; Reserved
 ISR_NOERRCODE 31  ; Reserved
 
-; Common ISR handler - called by all ISRs
-; Stack layout on entry:
-;   [esp+20] Error code (or dummy 0)
-;   [esp+16] ISR number
-;   [esp+12] EIP
-;   [esp+8]  CS
-;   [esp+4]  EFLAGS
-;   [esp]    Error code (for exceptions that push it)
-; Note: CPU state is NOT yet saved
-global isr_common_stub
+
 extern isr_handler
 
 isr_common_stub:
@@ -90,8 +81,7 @@ isr_common_stub:
     mov fs, ax
     mov gs, ax
 
-    ; Call C handler
-    call isr_handler
+
 
     ; Restore segment registers
     pop gs
@@ -101,10 +91,3 @@ isr_common_stub:
 
     ; Restore general-purpose registers
     popa
-
-    ; Clean up error code and ISR number from stack
-    ; These were pushed by ISR macros before calling common stub
-    add esp, 8
-
-    ; Return from interrupt
-    iret

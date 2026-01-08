@@ -2,7 +2,6 @@
 /* Licensed under GPLv3 */
 
 #include <kernel/idt.h>
-/* #include <kernel/gdt.h> */
 
 /* IDT entry structure (for 32-bit) */
 typedef struct {
@@ -56,6 +55,7 @@ extern void isr28(void); /* Reserved */
 extern void isr29(void); /* Reserved */
 extern void isr30(void); /* Reserved */
 extern void isr31(void); /* Reserved */
+extern void isr_default(void); /* Default handler for unhandled interrupts */
 
 /* Default interrupt handler stub (assembly) */
 extern void isr_common_stub(void);
