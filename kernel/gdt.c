@@ -28,7 +28,7 @@ static gdt_entry_t gdt[5];
 static gdt_ptr_t gdt_ptr;
 
 /* Function to set a GDT entry */
-static void gdt_set_entry(int num, unsigned int base, unsigned int limit, 
+static void gdt_set_entry(int num, unsigned int base, unsigned int limit,
                           unsigned char access, unsigned char gran) {
     /* Set base address */
     gdt[num].base_low = (base & 0xFFFF);
@@ -45,6 +45,10 @@ static void gdt_set_entry(int num, unsigned int base, unsigned int limit,
     /* Set access byte */
     gdt[num].access = access;
 }
+
+/* Define segment selectors */
+#define KERNEL_CS 0x08  /* Index 1 << 3 */
+#define KERNEL_DS 0x10  /* Index 2 << 3 */
 
 /* Initialize GDT */
 void gdt_init(void) {
@@ -77,20 +81,5 @@ void gdt_init(void) {
     /* User Data Segment */
     gdt_set_entry(4, 0, 0xFFFFFFFF, 0xF2, 0xCF);
 
-    /* Load GDT */
-    __asm__ __volatile__("lgdt %0" : : "m"(gdt_ptr));
-
-    /* Reload segment registers with new selectors */
-    __asm__ __volatile__(
-        "mov $" STR(KERNEL_DS) ", %%ax\n"
-        "mov %%ax, %%ds\n"
-        "mov %%ax, %%es\n"
-        "mov %%ax, %%fs\n"
-        "mov %%ax, %%gs\n"
-        "mov %%ax, %%ss\n"
-        /* Reload CS via far jump */
-        "ljmp $" STR(KERNEL_CS) ", $1f\n"
-        "1:\n"
-        : : : "ax"
-    );
++
 }
