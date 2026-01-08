@@ -27,7 +27,7 @@ context_switch:
     ; Save stack pointers
     mov eax, [esp+4]      ; old_proc
     mov [eax+0], esp       ; Save ESP (offset 0 in process_t)
-    mov ebp, [eax+4]       ; Save EBP
+    mov [eax+4], ebp       ; Save EBP
 
     ; Load new process state
     mov eax, [esp+8]      ; new_proc
