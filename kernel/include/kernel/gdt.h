@@ -1,5 +1,5 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
 /* SYNAPSE SO - Global Descriptor Table Header */
-/* Licensed under GPLv3 */
 
 #ifndef KERNEL_GDT_H
 #define KERNEL_GDT_H
