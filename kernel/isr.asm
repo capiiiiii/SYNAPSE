@@ -4,7 +4,8 @@
 section .text
 
 ; Segment selector constants (must match kernel/include/kernel/gdt.h)
-%define KERNEL_CS 0x08
+%define GDT_KERNEL_CODE 0x08
+%define GDT_KERNEL_DATA 0x10
 
 ; Macro for ISR without error code
 ; These push a dummy error code to keep stack uniform
@@ -62,6 +63,13 @@ ISR_NOERRCODE 29  ; Reserved
 ISR_NOERRCODE 30  ; Reserved
 ISR_NOERRCODE 31  ; Reserved
 
+; Default ISR for unhandled interrupts
+global isr_default
+isr_default:
+    cli
+    push byte 0      ; dummy error code
+    push dword 255   ; reserved ISR number for unassigned
+    jmp isr_common_stub
 
 extern isr_handler
 
@@ -76,8 +84,9 @@ isr_common_stub:
     push gs
 
 
+    mov ax, GDT_KERNEL_DATA        ; Load kernel data segment
     mov ds, ax
-    mov ax, KERNEL_DS
+    mov es, ax
     mov fs, ax
     mov gs, ax
 
