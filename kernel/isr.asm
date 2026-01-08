@@ -118,7 +118,8 @@ isr_common_stub:
     mov gs, ax
 
     ; Call C handler
-    push esp                 ; Push pointer to registers_t struct
+    mov eax, esp
+    push eax                 ; Push pointer to registers_t struct
     call isr_handler
     add esp, 4               ; Clean up argument from stack
 
