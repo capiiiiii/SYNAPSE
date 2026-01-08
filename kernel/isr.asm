@@ -3,91 +3,91 @@
 
 section .text
 
+; Segment selector constants (must match kernel/include/kernel/gdt.h)
+%define KERNEL_CS 0x08
+
 ; Macro for ISR without error code
+; These push a dummy error code to keep stack uniform
 %macro ISR_NOERRCODE 1
   global isr%1
   isr%1:
     cli
-    push byte 0
-    push byte %1
+    push byte 0      ; Push dummy error code for consistency
+    push byte %1     ; Push ISR number
     jmp isr_common_stub
 %endmacro
 
 ; Macro for ISR with error code
+; These don't push dummy error code - CPU pushes it
 %macro ISR_ERRCODE 1
   global isr%1
   isr%1:
     cli
-    push byte %1
+    push byte %1     ; Push ISR number (error code already pushed by CPU)
     jmp isr_common_stub
 %endmacro
 
 ; Define all ISRs
-ISR_NOERRCODE 0
-ISR_NOERRCODE 1
-ISR_NOERRCODE 2
-ISR_NOERRCODE 3
-ISR_NOERRCODE 4
-ISR_NOERRCODE 5
-ISR_NOERRCODE 6
-ISR_NOERRCODE 7
-ISR_ERRCODE   8
-ISR_NOERRCODE 9
-ISR_ERRCODE   10
-ISR_ERRCODE   11
-ISR_ERRCODE   12
-ISR_ERRCODE   13
-ISR_ERRCODE   14
-ISR_NOERRCODE 15
-ISR_NOERRCODE 16
-ISR_ERRCODE   17
-ISR_NOERRCODE 18
-ISR_NOERRCODE 19
-ISR_NOERRCODE 20
-ISR_ERRCODE   21
-ISR_NOERRCODE 22
-ISR_NOERRCODE 23
-ISR_NOERRCODE 24
-ISR_NOERRCODE 25
-ISR_NOERRCODE 26
-ISR_NOERRCODE 27
-ISR_NOERRCODE 28
-ISR_NOERRCODE 29
-ISR_NOERRCODE 30
-ISR_NOERRCODE 31
+; Exceptions 0-31
+ISR_NOERRCODE 0   ; Divide by zero
+ISR_NOERRCODE 1   ; Debug
+ISR_NOERRCODE 2   ; Non-maskable interrupt
+ISR_NOERRCODE 3   ; Breakpoint
+ISR_NOERRCODE 4   ; Into detected overflow
+ISR_NOERRCODE 5   ; Out of bounds
+ISR_NOERRCODE 6   ; Invalid opcode
+ISR_NOERRCODE 7   ; No coprocessor
+ISR_ERRCODE   8   ; Double fault
+ISR_NOERRCODE 9   ; Coprocessor segment overrun
+ISR_ERRCODE   10  ; Bad TSS
+ISR_ERRCODE   11  ; Segment not present
+ISR_ERRCODE   12  ; Stack fault
+ISR_ERRCODE   13  ; General protection fault
+ISR_ERRCODE   14  ; Page fault
+ISR_NOERRCODE 15  ; Unknown interrupt
+ISR_NOERRCODE 16  ; Coprocessor fault
+ISR_ERRCODE   17  ; Alignment check
+ISR_NOERRCODE 18  ; Machine check
+ISR_NOERRCODE 19  ; SIMD floating-point
+ISR_NOERRCODE 20  ; Virtualization
+ISR_ERRCODE   21  ; Control protection
+ISR_NOERRCODE 22  ; Reserved
+ISR_NOERRCODE 23  ; Reserved
+ISR_NOERRCODE 24  ; Reserved
+ISR_NOERRCODE 25  ; Reserved
+ISR_NOERRCODE 26  ; Reserved
+ISR_NOERRCODE 27  ; Reserved
+ISR_NOERRCODE 28  ; Reserved
+ISR_NOERRCODE 29  ; Reserved
+ISR_NOERRCODE 30  ; Reserved
+ISR_NOERRCODE 31  ; Reserved
 
-; Default ISR for unhandled interrupts (32-255)
-global isr_default
-isr_default:
-        cli
-        push byte 0
-        push dword 0xFF
-        jmp isr_common_stub
 
-; Common ISR handler
 extern isr_handler
 
 isr_common_stub:
+    ; Save general-purpose registers
     pusha                    ; Pushes edi,esi,ebp,esp,ebx,edx,ecx,eax
 
+    ; Save segment registers
     push ds
     push es
     push fs
     push gs
 
-    mov ax, 0x10             ; Load kernel data segment (GDT_KERNEL_DATA)
+
     mov ds, ax
-    mov es, ax
+    mov ax, KERNEL_DS
     mov fs, ax
     mov gs, ax
 
-    call isr_handler         ; Call C handler
 
+
+    ; Restore segment registers
     pop gs
     pop fs
     pop es
     pop ds
 
+    ; Restore general-purpose registers
     popa
-    add esp, 8               ; Clean up pushed error code and ISR number
-    iret                     ; Return from interrupt

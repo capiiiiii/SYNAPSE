@@ -3,6 +3,10 @@
 
 #include <kernel/gdt.h>
 
+/* Macro to stringify for inline assembly (GDT-specific) */
+#define GDT_STR_HELPER(x) #x
+#define GDT_STR(x) GDT_STR_HELPER(x)
+
 /* GDT entry structure */
 typedef struct {
     unsigned short limit_low;
@@ -24,7 +28,7 @@ static gdt_entry_t gdt[5];
 static gdt_ptr_t gdt_ptr;
 
 /* Function to set a GDT entry */
-static void gdt_set_entry(int num, unsigned int base, unsigned int limit, 
+static void gdt_set_entry(int num, unsigned int base, unsigned int limit,
                           unsigned char access, unsigned char gran) {
     /* Set base address */
     gdt[num].base_low = (base & 0xFFFF);
@@ -41,6 +45,10 @@ static void gdt_set_entry(int num, unsigned int base, unsigned int limit,
     /* Set access byte */
     gdt[num].access = access;
 }
+
+/* Define segment selectors */
+#define KERNEL_CS 0x08  /* Index 1 << 3 */
+#define KERNEL_DS 0x10  /* Index 2 << 3 */
 
 /* Initialize GDT */
 void gdt_init(void) {
@@ -73,22 +81,5 @@ void gdt_init(void) {
     /* User Data Segment */
     gdt_set_entry(4, 0, 0xFFFFFFFF, 0xF2, 0xCF);
 
-    /* Load GDT */
-    __asm__ __volatile__("lgdt %0" : : "m"(gdt_ptr));
 
-    /* Reload segment registers with new selectors
-     * CS must be reloaded via far jump to activate new code segment
-     * Data segments can be reloaded directly
-     */
-    __asm__ __volatile__(
-        "movw %0, %%ax\n"
-        "movw %%ax, %%ds\n"
-        "movw %%ax, %%es\n"
-        "movw %%ax, %%fs\n"
-        "movw %%ax, %%gs\n"
-        "movw %%ax, %%ss\n"
-        "ljmp %1, $1f\n"
-        "1:\n"
-        : : "i"(GDT_KERNEL_DATA), "i"(GDT_KERNEL_CODE) : "ax"
-    );
 }
