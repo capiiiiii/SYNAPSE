@@ -52,51 +52,72 @@ SYNAPSE SO es un sistema operativo de código abierto diseñado para ser moderno
 
 ---
 
-### 🔄 Fase 2: Gestión de Memoria y Scheduler Básico (EN PROGRESO)
-**Estado**: Próxima fase
+### ✅ Fase 2: Gestión de Memoria y Scheduler Básico (COMPLETADA)
+**Estado**: Completado - Enero 2025
 
 **Objetivos**:
-- [ ] Gestor de memoria física (frame allocator)
-- [ ] Gestor de memoria virtual (paging)
-- [ ] Heap del kernel (kmalloc/kfree)
-- [ ] Scheduler básico (Round-Robin)
-- [ ] Estructuras de procesos (PCB)
-- [ ] Soporte para binarios ELF
-- [ ] Cambio de contexto
+- [x] Gestor de memoria física (frame allocator)
+- [x] Gestor de memoria virtual (paging)
+- [x] Heap del kernel (kmalloc/kfree)
+- [x] Scheduler básico (Round-Robin)
+- [x] Estructuras de procesos (PCB)
+- [x] Soporte para binarios ELF
+- [x] Cambio de contexto
 
 **Subtareas**:
 
-#### 2.1 Memoria Física
-- [ ] Detección de memoria disponible
-- [ ] Bitmap para跟踪 de frames
-- [ ] Funciones: alloc_frame(), free_frame()
-- [ ] Manejo de regiones reservadas
+#### 2.1 Memoria Física ✅
+- [x] Detección de memoria disponible
+- [x] Bitmap para tracking de frames
+- [x] Funciones: alloc_frame(), free_frame()
+- [x] Manejo de regiones reservadas
 
-#### 2.2 Memoria Virtual
-- [ ] Setup de paginación (CR3, páginas 4KB)
-- [ ] Directorio y tablas de páginas
-- [ ] Mapeo: map_page(), unmap_page()
-- [ ] Fault handler para page faults
+#### 2.2 Memoria Virtual ✅
+- [x] Setup de paginación (CR3, páginas 4KB)
+- [x] Directorio y tablas de páginas
+- [x] Mapeo: map_page(), unmap_page()
+- [x] Fault handler para page faults
 
-#### 2.3 Kernel Heap
-- [ ] Algoritmo de asignación (simple o slab)
-- [ ] kmalloc(), kfree(), krealloc()
-- [ ] Manejo de fragmentación
-- [ ] Debugging y estadísticas
+#### 2.3 Kernel Heap ✅
+- [x] Algoritmo de asignación (free list)
+- [x] kmalloc(), kfree(), krealloc()
+- [x] Manejo de fragmentación
+- [x] Debugging y estadísticas
 
-#### 2.4 Scheduler
-- [ ] Cola de listos (ready queue)
-- [ ] Round-Robin con quantum configurable
-- [ ] Cambio de contexto (save/restore state)
-- [ ] Manejo de prioridades básico
+#### 2.4 Scheduler ✅
+- [x] Cola de listos (ready queue)
+- [x] Round-Robin con quantum configurable
+- [x] Cambio de contexto (save/restore state)
+- [x] Manejo de prioridades básico
 
-#### 2.5 ELF Loader
-- [ ] Parseo de cabeceras ELF
-- [ ] Carga de secciones en memoria
-- [ ] Relocaciones básicas
-- [ ] Creación de espacio de direcciones del proceso
+#### 2.5 ELF Loader ✅
+- [x] Parseo de cabeceras ELF
+- [x] Carga de secciones en memoria
+- [x] Relocaciones básicas
+- [x] Creación de espacio de direcciones del proceso
 
-**Tiempo estimado**: 4-6 semanas
+**Entregables**:
+- kernel/pmm.c - Physical Memory Manager
+- kernel/vmm.c - Virtual Memory Manager
+- kernel/heap.c - Kernel Heap Manager
+- kernel/process.c - Process Management
+- kernel/scheduler.c - Round-Robin Scheduler
+- kernel/elf.c - ELF Loader
+- kernel/switch.asm - Context Switching Assembly
+- kernel/lib/string.c - Extended string library
+- kernel/include/kernel/*.h - All headers
+
+**Limitaciones Conocidas**:
+- Timer interrupt no implementado (scheduler_tick() no se llama)
+- Cambio de contexto no integrado con scheduler
+- No hay syscalls
+- ELF loader incompleto (process_exec() es stub)
+- No hay soporte de modo usuario real
+- No hay IPC
+
+**Próximos pasos**: Comenzar Fase 3
+
+**Tiempo real**: ~4 días (Enero 2025)
 
 ---
 

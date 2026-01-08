@@ -60,13 +60,20 @@ ISO_DIR = isodir
 BOOT_ASM = $(BOOT_DIR)/boot.asm
 
 # Kernel assembly files
-KERNEL_ASM = $(KERNEL_DIR)/isr.asm
+KERNEL_ASM = $(KERNEL_DIR)/isr.asm \
+             $(KERNEL_DIR)/switch.asm
 
 # Kernel C source files (explicit list to avoid pattern conflicts)
 KERNEL_C_FILES = $(KERNEL_DIR)/kernel.c \
                 $(KERNEL_DIR)/vga.c \
                 $(KERNEL_DIR)/gdt.c \
-                $(KERNEL_DIR)/idt.c
+                $(KERNEL_DIR)/idt.c \
+                $(KERNEL_DIR)/pmm.c \
+                $(KERNEL_DIR)/vmm.c \
+                $(KERNEL_DIR)/heap.c \
+                $(KERNEL_DIR)/process.c \
+                $(KERNEL_DIR)/scheduler.c \
+                $(KERNEL_DIR)/elf.c
 
 # Library C source files
 KERNEL_LIB_FILES = $(KERNEL_DIR)/lib/string.c
@@ -95,15 +102,18 @@ $(BUILD_DIR):
 # ============================================================================
 
 # Compile boot assembly
-$(BOOT_OBJ): $(BOOT_ASM) | $(BUILD_DIR)
+$(BUILD_DIR)/boot.o: $(BOOT_ASM) | $(BUILD_DIR)
 	$(AS) $(ASFLAGS) $< -o $@
 
 # ============================================================================
 # KERNEL ASSEMBLY
 # ============================================================================
 
-# Compile kernel assembly
-$(KERNEL_ASM_OBJ): $(KERNEL_ASM) | $(BUILD_DIR)
+# Compile kernel assembly files
+$(BUILD_DIR)/isr.o: $(KERNEL_DIR)/isr.asm | $(BUILD_DIR)
+	$(AS) $(ASFLAGS) $< -o $@
+
+$(BUILD_DIR)/switch.o: $(KERNEL_DIR)/switch.asm | $(BUILD_DIR)
 	$(AS) $(ASFLAGS) $< -o $@
 
 # ============================================================================
@@ -118,13 +128,18 @@ $(BUILD_DIR)/%.o: $(KERNEL_DIR)/%.c | $(BUILD_DIR)
 # ============================================================================
 
 $(BUILD_DIR)/%.o: $(KERNEL_DIR)/lib/%.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -I$(KERNEL_DIR)/include -c $< -o $@
 
 # ============================================================================
 # LINKING
 # ============================================================================
 
+# Object files (explicit list)
+BOOT_OBJ = $(BUILD_DIR)/boot.o
+KERNEL_ASM_OBJS = $(BUILD_DIR)/isr.o $(BUILD_DIR)/switch.o
+
 # Link all object files into kernel ELF
-$(KERNEL_BIN): $(BOOT_OBJ) $(KERNEL_ASM_OBJ) $(KERNEL_C_OBJS) $(KERNEL_LIB_OBJS)
+$(KERNEL_BIN): $(BOOT_OBJ) $(KERNEL_ASM_OBJS) $(KERNEL_C_OBJS) $(KERNEL_LIB_OBJS)
 	$(LD) $(LDFLAGS) -o $@ $^
 
 # ============================================================================
@@ -183,7 +198,7 @@ size: $(KERNEL_BIN)
 	size $(KERNEL_BIN)
 	@echo ""
 	@echo "Section sizes:"
-	@size -A $(KERNEL_BIN)
+	size -A $(KERNEL_BIN)
 
 # Check if required tools are installed
 check-tools:
