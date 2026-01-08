@@ -129,12 +129,16 @@ uint32_t scheduler_get_ready_count(void) {
         return 0;
     }
 
-    do {
+    process_t* start = proc;
+    while (proc != 0) {
         if (proc->state == PROC_STATE_READY || proc->state == PROC_STATE_RUNNING) {
             count++;
         }
         proc = proc->next;
-    } while (proc != process_list);
+        if (proc == start) {
+            break;
+        }
+    }
 
     return count;
 }
