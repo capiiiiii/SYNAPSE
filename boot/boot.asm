@@ -1,5 +1,5 @@
 ; SYNAPSE SO - Bootloader Entry Point
-; Minimal boot setup for x86_64 kernel
+; Minimal boot setup for i386 (32-bit) kernel
 ; Licensed under GPLv3
 
 section .multiboot
