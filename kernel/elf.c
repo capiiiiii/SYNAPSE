@@ -165,7 +165,8 @@ int elf_load_to_process(uint8_t* elf_data, uint32_t size, process_t* proc) {
         return -1;
     }
 
-    /* Switch to process page directory */
+    /* Switch to process page directory (save current directory to restore later) */
+    uint32_t _old_dir = vmm_get_current_directory();
     vmm_switch_page_directory(proc->page_dir);
 
     /* Load program segments */
@@ -184,6 +185,12 @@ int elf_load_to_process(uint8_t* elf_data, uint32_t size, process_t* proc) {
             /* Map pages with user flag */
             for (uint32_t addr = start_page; addr < end_page; addr += PAGE_SIZE) {
                 uint32_t phys = pmm_alloc_frame();
+                if (phys == 0) {
+                    vga_print("[-] Failed to allocate physical frame\n");
+                    /* restore previous directory before returning */
+                    vmm_switch_page_directory(_old_dir);
+                    return -1;
+                }
                 uint32_t flags = 0;
 
                 if (phdr->p_flags & PF_W) {
@@ -215,8 +222,8 @@ int elf_load_to_process(uint8_t* elf_data, uint32_t size, process_t* proc) {
 
     vga_print("[+] ELF loaded for process\n");
 
-    /* Switch back to kernel page directory */
-    vmm_switch_page_directory(vmm_get_current_directory());
+    /* Switch back to previous page directory (kernel or caller) */
+    vmm_switch_page_directory(_old_dir);
 
     return 0;
 }
