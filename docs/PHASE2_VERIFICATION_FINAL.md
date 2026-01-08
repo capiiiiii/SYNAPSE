@@ -471,15 +471,15 @@ Las siguientes limitaciones son conocidas y han sido documentadas para Phase 3:
 **Solución Requerida:** Implementar mapeo temporal de ELF data en process space
 **Archivo:** kernel/elf.c (documentado con warning)
 
-### 2. ⚠️ Timer Interrupt No Conectado
-**Estado:** Pendiente para Phase 3
-**Descripción:** `scheduler_tick()` existe pero no se llama por interrupción de timer
-**Solución Requerida:** Implementar driver PIT (8254) y conectar IRQ0
+### 2. ✅ Timer Interrupt Conectado
+**Estado:** Implementado
+**Descripción:** Se implementó un driver de PIT (8254) y se conectó IRQ0 (vector 32) para incrementar ticks y llamar `scheduler_tick()`.
+**Archivos:** `kernel/timer.c`, `kernel/idt.c`
 
-### 3. ⚠️ Context Switching No Integrado
-**Estado:** Pendiente para Phase 3
-**Descripción:** `context_switch()` existe pero `schedule()` no lo llama
-**Solución Requerida:** Integrar `context_switch()` en `schedule()`
+### 3. ✅ Context Switching Integrado (Kernel Threads)
+**Estado:** Implementado
+**Descripción:** El scheduler realiza cambio de contexto preemptivo retornando un frame de registros distinto desde `isr_handler()`, permitiendo cambiar de stack y de `CR3` en cada tick.
+**Archivos:** `kernel/isr.asm`, `kernel/idt.c`, `kernel/scheduler.c`
 
 ### 4. ⚠️ Sin Syscalls
 **Estado:** Pendiente para Phase 3
@@ -500,14 +500,13 @@ Las siguientes limitaciones son conocidas y han sido documentadas para Phase 3:
    - Función `vmm_map_temporary()` que mapea memoria física en espacio de proceso
    - Permitir copia de datos ELF entre espacios de direcciones
 
-2. ✅ **Conectar timer interrupt**
-   - Implementar driver PIT (8254)
-   - Configurar IRQ0 a 100Hz
-   - Llamar `scheduler_tick()` en handler de IRQ0
+2. ✅ **Conectar timer interrupt (IMPLEMENTADO)**
+   - Driver PIT (8254) en `kernel/timer.c`
+   - IRQ0 (vector 32) incrementa ticks y llama `scheduler_tick()`
 
-3. ✅ **Integrar context switching**
-   - Modificar `schedule()` para llamar `context_switch()`
-   - Asegurar que todos los registros se preservan
+3. ✅ **Integrar context switching (IMPLEMENTADO)**
+   - `isr_handler()` devuelve el frame a restaurar y `kernel/isr.asm` ajusta `esp`
+   - `scheduler_tick()` selecciona el siguiente proceso, cambia `CR3` y retorna su frame
 
 ### Prioridad Media (Funcionalidad del Sistema)
 4. ✅ **Implementar syscalls**

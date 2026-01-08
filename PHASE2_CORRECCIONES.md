@@ -151,27 +151,26 @@ No es posible copiar datos directamente del espacio del kernel al espacio del pr
 
 **Estado:** ⚠️ Pendiente para Phase 3
 
-### 2. Timer Interrupt No Implementado
-**Problema:**
-La función `scheduler_tick()` existe pero no se llama por ninguna interrupción de timer. Los procesos no cambian automáticamente.
+### 2. Timer Interrupt Implementado ✅
+**Problema (antes):**
+La función `scheduler_tick()` existía pero no se llamaba por ninguna interrupción de timer.
 
-**Solución Requerida:**
-- Implementar driver PIT (8254)
-- Configurar IRQ0 para timer
-- Llamar `scheduler_tick()` en el handler de IRQ0
+**Solución Aplicada:**
+- Driver PIT (8254) implementado en `kernel/timer.c`
+- IRQ0 (vector 32) incrementa ticks y llama `scheduler_tick()` desde `kernel/idt.c`
 
-**Estado:** ⚠️ Pendiente para Phase 3
+**Estado:** ✅ Implementado
 
-### 3. Context Switching No Integrado
-**Problema:**
-La función `context_switch()` en assembly existe pero no se llama desde `schedule()`. Todos los procesos ejecutan en el mismo contexto.
+### 3. Context Switching Integrado ✅
+**Problema (antes):**
+El scheduler no realizaba cambios de contexto reales.
 
-**Solución Requerida:**
-- Integrar `context_switch()` en `schedule()`
-- Asegurar que todos los registros se preservan
-- Manejar la primera ejecución de un proceso
+**Solución Aplicada:**
+- `isr_handler()` ahora devuelve un puntero al frame de registros a restaurar
+- `kernel/isr.asm` ajusta `esp` al frame devuelto, permitiendo cambiar de stack
+- `scheduler_tick()` selecciona el siguiente proceso, cambia `CR3` y retorna el frame
 
-**Estado:** ⚠️ Pendiente para Phase 3
+**Estado:** ✅ Implementado (hilos de kernel preemptivos)
 
 ### 4. Falta de Mapeo Temporal en VMM
 **Problema:**

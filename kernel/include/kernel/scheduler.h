@@ -5,6 +5,7 @@
 #define KERNEL_SCHEDULER_H
 
 #include <stdint.h>
+#include <kernel/idt.h>
 #include <kernel/process.h>
 
 /* Scheduler quantum (time slice) */
@@ -19,8 +20,10 @@ void scheduler_add_process(process_t* proc);
 /* Remove process from scheduler */
 void scheduler_remove_process(process_t* proc);
 
-/* Schedule next process (called by timer interrupt) */
-void scheduler_tick(void);
+/* Schedule next process (called by timer interrupt)
+ * Returns the register frame to restore (for context switching).
+ */
+registers_t* scheduler_tick(registers_t* regs);
 
 /* Force schedule */
 void schedule(void);

@@ -19,8 +19,11 @@ typedef struct {
 /* IDT initialization function */
 void idt_init(void);
 
-/* ISR handler function (called from assembly) */
-void isr_handler(registers_t *regs);
+/* ISR handler function (called from assembly)
+ * Returns a pointer to the register frame to restore. This enables
+ * scheduler-driven context switching by returning a different frame.
+ */
+registers_t* isr_handler(registers_t *regs);
 
 #ifdef __cplusplus
 }

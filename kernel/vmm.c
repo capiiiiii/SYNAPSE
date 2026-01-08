@@ -107,6 +107,10 @@ void vmm_map_page(uint32_t virt_addr, uint32_t phys_addr, uint32_t flags) {
     if (!(*pde & PAGE_PRESENT)) {
         /* Allocate new page table */
         uint32_t pt_phys = pmm_alloc_frame();
+        if (pt_phys == 0) {
+            vga_print("[-] Failed to allocate page table!\n");
+            return;
+        }
         pt = (page_table_t*)(pt_phys + KERNEL_VIRT_START);
 
         /* Clear page table */

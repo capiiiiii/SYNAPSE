@@ -6,6 +6,8 @@
 #include <kernel/io.h>
 #include <kernel/gdt.h>
 #include <kernel/vmm.h>
+#include <kernel/scheduler.h>
+#include <kernel/timer.h>
 
 /* IDT entry structure (for 32-bit) */
 typedef struct {
@@ -93,7 +95,11 @@ static void idt_set_gate(unsigned char num, unsigned int base,
 }
 
 /* ISR handler called from assembly stub */
-void isr_handler(registers_t *regs) {
+registers_t* isr_handler(registers_t *regs) {
+    if (regs == 0) {
+        return regs;
+    }
+
     /* Identify which interrupt occurred */
     if (regs->int_no < 32) {
         /* Exception handling */
@@ -115,15 +121,34 @@ void isr_handler(registers_t *regs) {
                 }
                 break;
         }
-    } else if (regs->int_no >= 32 && regs->int_no <= 47) {
-        /* IRQ handling */
+
+        return regs;
+    }
+
+    if (regs->int_no >= 32 && regs->int_no <= 47) {
+        registers_t* new_regs = regs;
+
+        /* IRQ0: PIT timer */
+        if (regs->int_no == 32) {
+            timer_increment_tick();
+            new_regs = scheduler_tick(regs);
+            if (new_regs == 0) {
+                new_regs = regs;
+            }
+        }
+
+        /* Send EOI */
         if (regs->int_no >= 40) {
             /* Slave PIC */
             outb(0xA0, 0x20);
         }
         /* Master PIC */
         outb(0x20, 0x20);
+
+        return new_regs;
     }
+
+    return regs;
 }
 
 /* Initialize IDT */

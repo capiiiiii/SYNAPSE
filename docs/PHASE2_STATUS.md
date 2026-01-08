@@ -177,6 +177,7 @@ kernel/vmm.c              - Virtual Memory Manager
 kernel/heap.c             - Kernel Heap Manager
 kernel/process.c          - Process Management
 kernel/scheduler.c        - Scheduler
+kernel/timer.c            - PIT Timer (IRQ0)
 kernel/elf.c             - ELF Loader
 kernel/switch.asm        - Context Switching Assembly
 kernel/lib/string.c      - Extended string library
@@ -189,6 +190,7 @@ kernel/include/kernel/vmm.h
 kernel/include/kernel/heap.h
 kernel/include/kernel/process.h
 kernel/include/kernel/scheduler.h
+kernel/include/kernel/timer.h
 kernel/include/kernel/elf.h
 kernel/include/kernel/string.h
 ```
@@ -206,21 +208,20 @@ The kernel components are initialized in this order:
 8. **Process Management** - Phase 2 (NEW)
 9. **Scheduler** - Phase 2 (NEW)
 
-## Known Limitations
+## Remaining Limitations
 
-1. **No timer interrupt**: The scheduler tick function is implemented but not yet called by a timer interrupt. Processes won't automatically switch.
+The PIT timer (IRQ0) is now configured and wired to `scheduler_tick()`, enabling
+preemptive context switching between kernel threads.
 
-2. **No real process switching**: The context switching assembly is implemented but not yet integrated with the scheduler. All processes run in the same context.
+1. **No syscalls**: System call interface is not yet implemented.
 
-3. **No syscalls**: System call interface is not yet implemented.
+2. **ELF loader incomplete**: The ELF loader can parse headers but doesn't fully implement process creation from ELF binaries.
 
-4. **ELF loader incomplete**: The ELF loader can parse headers but doesn't fully implement process creation from ELF binaries.
+3. **No user space support**: While the structures support user processes, the actual user mode execution is not yet implemented.
 
-5. **No user space support**: While the structures support user processes, the actual user mode execution is not yet implemented.
+4. **No inter-process communication**: No IPC mechanisms are implemented.
 
-6. **No inter-process communication**: No IPC mechanisms are implemented.
-
-7. **No priority scheduling**: Process priorities are defined but not used by the scheduler.
+5. **No priority scheduling**: Process priorities are defined but not used by the scheduler.
 
 ## Testing
 
@@ -252,13 +253,12 @@ gdb build/kernel.elf
 
 The following tasks should be addressed in Phase 3:
 
-1. **Timer Interrupt Driver**: Implement PIT (8254) driver to call scheduler_tick()
-2. **Real Context Switching**: Integrate context_switch() with scheduler
-3. **System Call Interface**: Implement int 0x80 or sysenter mechanism
-4. **Process Fork/Exec**: Implement fork() and exec() syscalls
-5. **User Mode Execution**: Switch to user mode (ring 3) for user processes
-6. **File System**: Implement basic VFS and file system
-7. **IPC Mechanisms**: Implement pipes, shared memory, etc.
+1. **System Call Interface**: Implement int 0x80 or sysenter mechanism
+2. **Process Fork/Exec**: Implement fork() and exec() syscalls
+3. **User Mode Execution**: Switch to user mode (ring 3) for user processes
+4. **File System**: Implement basic VFS and file system
+5. **IPC Mechanisms**: Implement pipes, shared memory, etc.
+6. **Scheduler improvements**: priorities, sleep/delay primitives, and locks
 
 ## Code Quality
 

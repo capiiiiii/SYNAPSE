@@ -84,7 +84,7 @@ He completado exitosamente la implementación de **Phase 2: Gestión de Memoria 
 - Quantum de tiempo configurable (default: 10 ticks)
 - Cola de listos (circular doblemente enlazada)
 - Transiciones de estado de procesos
-- Función scheduler_tick() para interrupción de timer
+- Función scheduler_tick() conectada a interrupción de timer (PIT IRQ0)
 
 ### 6. ELF Loader ✅
 **Archivos:**
