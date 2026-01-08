@@ -81,7 +81,7 @@ void vmm_init(void) {
         "mov %%eax, %%cr0\n"
         :
         : "r"((uint32_t)kernel_directory - KERNEL_VIRT_START + KERNEL_PHYS_BASE)
-        : "%eax"
+        : "r"((uint32_t)kernel_directory - KERNEL_VIRT_START)
     );
 
     vga_print("    Paging enabled\n");
