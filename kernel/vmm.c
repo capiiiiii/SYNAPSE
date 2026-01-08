@@ -109,8 +109,8 @@ void vmm_map_page(uint32_t virt_addr, uint32_t phys_addr, uint32_t flags) {
         /* Set page directory entry */
         *pde = pt_phys | flags | PAGE_PRESENT;
     } else {
-        pt = (page_table_t*)(*pde & 0xFFFFF000);
-        pt = (page_table_t*)((uint32_t)pt + KERNEL_VIRT_START - KERNEL_PHYS_BASE);
+        /* Convert PDE physical address to kernel virtual address */
+        pt = (page_table_t*)(((*pde) & 0xFFFFF000) + KERNEL_VIRT_START);
     }
 
     /* Map the page */
