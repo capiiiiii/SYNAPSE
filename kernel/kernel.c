@@ -34,7 +34,9 @@ void kernel_main(multiboot_info_t* mbi, unsigned int magic) {
     vga_set_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
     if (magic != 0x2BADB002) {
         vga_print("[-] Error: Invalid Multiboot magic number!\n");
-        return;
+        while (1) {
+            __asm__ __volatile__("hlt");
+        }
     }
     vga_print("[+] Multiboot validated successfully\n");
 
