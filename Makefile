@@ -1,6 +1,13 @@
 # SYNAPSE SO - Makefile
 # Licensed under GPLv3
 
+# Required tools:
+# - gcc with 32-bit support (multilib)
+# - nasm (Netwide Assembler)
+# - GNU ld (linker)
+# - grub-mkrescue (GRUB bootloader)
+# - qemu-system-x86_64 (for testing)
+
 # Compiler and tools
 CC = gcc
 AS = nasm
@@ -51,15 +58,21 @@ $(BOOT_OBJ): $(BOOT_ASM) | $(BUILD_DIR)
 $(KERNEL_ASM_OBJ): $(KERNEL_ASM) | $(BUILD_DIR)
 	$(AS) $(ASFLAGS) $< -o $@
 
-# Compile kernel C files
-$(BUILD_DIR)/%.o: $(KERNEL_DIR)/%.c | $(BUILD_DIR)
+# Compile kernel C files (explicit rules to avoid pattern ambiguity)
+$(BUILD_DIR)/kernel.o: $(KERNEL_DIR)/kernel.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -I$(KERNEL_DIR)/include -c $< -o $@
-    @mkdir -p $(dir $@)
-    $(CC) $(CFLAGS) -I$(KERNEL_DIR)/include -c $< -o $@
+
+$(BUILD_DIR)/vga.o: $(KERNEL_DIR)/vga.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -I$(KERNEL_DIR)/include -c $< -o $@
+
+$(BUILD_DIR)/gdt.o: $(KERNEL_DIR)/gdt.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -I$(KERNEL_DIR)/include -c $< -o $@
+
+$(BUILD_DIR)/idt.o: $(KERNEL_DIR)/idt.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -I$(KERNEL_DIR)/include -c $< -o $@
 
 # Compile library files
-$(BUILD_DIR)/%.o: $(KERNEL_DIR)/lib/%.c | $(BUILD_DIR)
-    @mkdir -p $(dir $@)
+$(BUILD_DIR)/string.o: $(KERNEL_DIR)/lib/string.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -I$(KERNEL_DIR)/include -c $< -o $@
 
 # Link kernel
@@ -76,6 +89,17 @@ $(ISO_IMAGE): $(KERNEL_BIN)
 	@echo "}" >> $(ISO_DIR)/boot/grub/grub.cfg
 	$(GRUB_MKRESCUE) -o $@ $(ISO_DIR)
 
+# Check for required tools
+check-tools:
+	@echo "Checking for required tools..."
+	@command -v $(CC) >/dev/null 2>&1 || { echo "ERROR: gcc not found"; exit 1; }
+	@$(CC) -m32 -xc /dev/null -c -o /dev/null 2>/dev/null || { echo "ERROR: gcc 32-bit support (multilib) not found"; exit 1; }
+	@command -v $(AS) >/dev/null 2>&1 || { echo "ERROR: nasm not found"; exit 1; }
+	@command -v $(LD) >/dev/null 2>&1 || { echo "ERROR: ld not found"; exit 1; }
+	@command -v $(GRUB_MKRESCUE) >/dev/null 2>&1 || { echo "ERROR: grub-mkrescue not found"; exit 1; }
+	@command -v qemu-system-x86_64 >/dev/null 2>&1 || { echo "WARNING: qemu-system-x86_64 not found (needed for 'make run')"; }
+	@echo "All required tools are available."
+
 # Run kernel in QEMU
 run: $(ISO_IMAGE)
 	qemu-system-x86_64 -cdrom $(ISO_IMAGE) -m 512M
@@ -83,6 +107,10 @@ run: $(ISO_IMAGE)
 # Run kernel with debug
 debug: $(ISO_IMAGE)
 	qemu-system-x86_64 -cdrom $(ISO_IMAGE) -m 512M -d int,cpu_reset
+
+# Run kernel with GDB server
+gdb: $(ISO_IMAGE)
+	qemu-system-x86_64 -cdrom $(ISO_IMAGE) -m 512M -s -S
 
 # Clean build files
 clean:
@@ -99,13 +127,23 @@ size: $(KERNEL_BIN)
 help:
 	@echo "SYNAPSE SO Build System"
 	@echo "======================="
+	@echo ""
+	@echo "Required Tools:"
+	@echo "  - gcc with 32-bit support"
+	@echo "  - nasm (assembler)"
+	@echo "  - GNU ld (linker)"
+	@echo "  - grub-mkrescue"
+	@echo "  - qemu-system-x86_64"
+	@echo ""
 	@echo "Targets:"
-	@echo "  all      - Build kernel and ISO (default)"
-	@echo "  run      - Run kernel in QEMU"
-	@echo "  debug    - Run kernel in QEMU with debug"
-	@echo "  clean    - Remove build files"
-	@echo "  rebuild  - Clean and rebuild"
-	@echo "  size     - Show kernel size information"
-	@echo "  help     - Show this help message"
+	@echo "  all         - Build kernel and ISO (default)"
+	@echo "  check-tools - Verify required tools are installed"
+	@echo "  run         - Run kernel in QEMU"
+	@echo "  debug       - Run kernel in QEMU with debug output"
+	@echo "  gdb         - Run kernel in QEMU with GDB server"
+	@echo "  clean       - Remove build files"
+	@echo "  rebuild     - Clean and rebuild"
+	@echo "  size        - Show kernel size information"
+	@echo "  help        - Show this help message"
 
-.PHONY: all run debug clean rebuild size help
+.PHONY: all check-tools run debug gdb clean rebuild size help

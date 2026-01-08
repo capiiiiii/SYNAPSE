@@ -56,6 +56,14 @@ ISR_NOERRCODE 29
 ISR_NOERRCODE 30
 ISR_NOERRCODE 31
 
+; Default ISR for unhandled interrupts (32-255)
+global isr_default
+isr_default:
+        cli
+        push byte 0
+        push dword 0xFF
+        jmp isr_common_stub
+
 ; Common ISR handler
 extern isr_handler
 
@@ -67,13 +75,13 @@ isr_common_stub:
     push fs
     push gs
 
-    mov ax, 0x10             ; Load kernel data segment
+    mov ax, 0x10             ; Load kernel data segment (GDT_KERNEL_DATA)
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
 
-    call isr_handler
+    call isr_handler         ; Call C handler
 
     pop gs
     pop fs
@@ -81,5 +89,5 @@ isr_common_stub:
     pop ds
 
     popa
-    add esp, 8               ; Cleans up pushed error code and ISR number
-    iret
+    add esp, 8               ; Clean up pushed error code and ISR number
+    iret                     ; Return from interrupt

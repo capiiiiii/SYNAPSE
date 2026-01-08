@@ -2,6 +2,7 @@
 /* Licensed under GPLv3 */
 
 #include <kernel/idt.h>
+#include <kernel/gdt.h>
 
 /* IDT entry structure (for 32-bit) */
 typedef struct {
@@ -55,6 +56,7 @@ extern void isr28(void); /* Reserved */
 extern void isr29(void); /* Reserved */
 extern void isr30(void); /* Reserved */
 extern void isr31(void); /* Reserved */
+extern void isr_default(void); /* Default handler for unhandled interrupts */
 
 /* Set an IDT gate */
 static void idt_set_gate(unsigned char num, unsigned int base, 
@@ -64,12 +66,6 @@ static void idt_set_gate(unsigned char num, unsigned int base,
     idt[num].selector = sel;
     idt[num].zero = 0;
     idt[num].type_attr = flags;
-}
-
-/* Default interrupt handler */
-static void default_isr_handler(void) {
-    /* In a full implementation, this would log the interrupt */
-    __asm__ __volatile__("iret");
 }
 
 /* ISR handler called from assembly stub */
@@ -89,44 +85,44 @@ void idt_init(void) {
     idt_ptr.limit = sizeof(idt_entry_t) * 256 - 1;
     idt_ptr.base = (unsigned int)&idt;
 
-    /* Clear IDT */
+    /* Set all IDT entries to default handler (assembly stub) */
     for (int i = 0; i < 256; i++) {
-        idt_set_gate(i, (unsigned int)default_isr_handler, 0x08, 0x8E);
+        idt_set_gate(i, (unsigned int)isr_default, GDT_KERNEL_CODE, 0x8E);
     }
 
-    /* Set up exception handlers */
-    idt_set_gate(0, (unsigned int)isr0, 0x08, 0x8E);
-    idt_set_gate(1, (unsigned int)isr1, 0x08, 0x8E);
-    idt_set_gate(2, (unsigned int)isr2, 0x08, 0x8E);
-    idt_set_gate(3, (unsigned int)isr3, 0x08, 0x8E);
-    idt_set_gate(4, (unsigned int)isr4, 0x08, 0x8E);
-    idt_set_gate(5, (unsigned int)isr5, 0x08, 0x8E);
-    idt_set_gate(6, (unsigned int)isr6, 0x08, 0x8E);
-    idt_set_gate(7, (unsigned int)isr7, 0x08, 0x8E);
-    idt_set_gate(8, (unsigned int)isr8, 0x08, 0x8E);
-    idt_set_gate(9, (unsigned int)isr9, 0x08, 0x8E);
-    idt_set_gate(10, (unsigned int)isr10, 0x08, 0x8E);
-    idt_set_gate(11, (unsigned int)isr11, 0x08, 0x8E);
-    idt_set_gate(12, (unsigned int)isr12, 0x08, 0x8E);
-    idt_set_gate(13, (unsigned int)isr13, 0x08, 0x8E);
-    idt_set_gate(14, (unsigned int)isr14, 0x08, 0x8E);
-    idt_set_gate(15, (unsigned int)isr15, 0x08, 0x8E);
-    idt_set_gate(16, (unsigned int)isr16, 0x08, 0x8E);
-    idt_set_gate(17, (unsigned int)isr17, 0x08, 0x8E);
-    idt_set_gate(18, (unsigned int)isr18, 0x08, 0x8E);
-    idt_set_gate(19, (unsigned int)isr19, 0x08, 0x8E);
-    idt_set_gate(20, (unsigned int)isr20, 0x08, 0x8E);
-    idt_set_gate(21, (unsigned int)isr21, 0x08, 0x8E);
-    idt_set_gate(22, (unsigned int)isr22, 0x08, 0x8E);
-    idt_set_gate(23, (unsigned int)isr23, 0x08, 0x8E);
-    idt_set_gate(24, (unsigned int)isr24, 0x08, 0x8E);
-    idt_set_gate(25, (unsigned int)isr25, 0x08, 0x8E);
-    idt_set_gate(26, (unsigned int)isr26, 0x08, 0x8E);
-    idt_set_gate(27, (unsigned int)isr27, 0x08, 0x8E);
-    idt_set_gate(28, (unsigned int)isr28, 0x08, 0x8E);
-    idt_set_gate(29, (unsigned int)isr29, 0x08, 0x8E);
-    idt_set_gate(30, (unsigned int)isr30, 0x08, 0x8E);
-    idt_set_gate(31, (unsigned int)isr31, 0x08, 0x8E);
+    /* Set up exception handlers (0-31) with dedicated assembly stubs */
+    idt_set_gate(0, (unsigned int)isr0, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(1, (unsigned int)isr1, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(2, (unsigned int)isr2, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(3, (unsigned int)isr3, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(4, (unsigned int)isr4, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(5, (unsigned int)isr5, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(6, (unsigned int)isr6, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(7, (unsigned int)isr7, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(8, (unsigned int)isr8, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(9, (unsigned int)isr9, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(10, (unsigned int)isr10, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(11, (unsigned int)isr11, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(12, (unsigned int)isr12, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(13, (unsigned int)isr13, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(14, (unsigned int)isr14, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(15, (unsigned int)isr15, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(16, (unsigned int)isr16, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(17, (unsigned int)isr17, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(18, (unsigned int)isr18, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(19, (unsigned int)isr19, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(20, (unsigned int)isr20, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(21, (unsigned int)isr21, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(22, (unsigned int)isr22, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(23, (unsigned int)isr23, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(24, (unsigned int)isr24, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(25, (unsigned int)isr25, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(26, (unsigned int)isr26, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(27, (unsigned int)isr27, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(28, (unsigned int)isr28, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(29, (unsigned int)isr29, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(30, (unsigned int)isr30, GDT_KERNEL_CODE, 0x8E);
+    idt_set_gate(31, (unsigned int)isr31, GDT_KERNEL_CODE, 0x8E);
 
     /* Load IDT */
     __asm__ __volatile__("lidt %0" : : "m"(idt_ptr));
