@@ -84,6 +84,7 @@ registers_t* scheduler_tick(registers_t* regs) {
         current = 0;
     }
 
+    if (current == 0) {
         if (process_list == 0) {
             return regs;
         }

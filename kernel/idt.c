@@ -96,8 +96,8 @@ static void idt_set_gate(unsigned char num, unsigned int base,
 
 /* ISR handler called from assembly stub */
 registers_t* isr_handler(registers_t *regs) {
-    if (regs == NULL) {
-        return NULL;
+    if (regs == 0) {
+        return 0;
     }
 
     /* Identify which interrupt occurred */
@@ -144,7 +144,6 @@ registers_t* isr_handler(registers_t *regs) {
                 new_regs = regs;
             }
         }
-        outb(0x20, 0x20);
 
         return new_regs;
     }

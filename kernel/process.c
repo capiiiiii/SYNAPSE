@@ -232,6 +232,10 @@ void process_destroy(process_t* proc) {
         return;
     }
 
+    /* Disable interrupts to make the list removal atomic */
+    unsigned int flags;
+    asm volatile("pushf; pop %0; cli" : "=r"(flags) :: "memory");
+
     if (proc->next == proc) {
         process_list = 0;
     } else {
@@ -244,6 +248,11 @@ void process_destroy(process_t* proc) {
 
     if (proc == current_process) {
         current_process = 0;
+    }
+
+    /* Restore interrupts */
+    if (flags & (1 << 9)) {
+        asm volatile("sti");
     }
 
     if ((proc->flags & PROC_FLAG_KERNEL) && proc->stack_start != 0) {
