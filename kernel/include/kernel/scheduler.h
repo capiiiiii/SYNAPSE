@@ -23,7 +23,8 @@ void scheduler_remove_process(process_t* proc);
 /* Schedule next process (called by timer interrupt)
  * Returns the register frame to restore (for context switching).
  */
-registers_t* scheduler_tick(registers_t* regs);
+/* Must be called with a valid register frame pointer from the timer ISR; passing NULL is undefined. */
+registers_t* scheduler_tick(registers_t* regs) __attribute__((nonnull(1)));
 
 /* Force schedule */
 void schedule(void);
