@@ -74,10 +74,9 @@ SYNAPSE SO es un sistema operativo de código abierto bajo licencia GPLv3 enfoca
 
 **Limitaciones Conocidas** (documentadas para Fase 3):
 - ⚠️ Copia ELF entre espacios de direcciones no implementada (requiere mapeo temporal)
-- ⚠️ Timer interrupt no conectado (scheduler_tick existe pero no se llama)
-- ⚠️ Context switching no integrado (context_switch existe pero schedule no lo llama)
 - ⚠️ Sin syscalls (no hay mecanismo int 0x80 o sysenter)
 - ⚠️ Sin soporte de modo usuario real (no hay switch a ring 3)
+- ⚠️ Scheduler sin primitivas de sleep/delay ni prioridades efectivas
 
 ---
 

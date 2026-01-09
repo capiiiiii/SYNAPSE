@@ -123,6 +123,12 @@ isr_common_stub:
     call isr_handler
     add esp, 4               ; Clean up argument from stack
 
+    ; Allow the C handler (scheduler) to switch contexts by returning a
+    ; different registers_t frame pointer in EAX.
+    test eax, eax
+    jz .no_context_switch
+    mov esp, eax
+.no_context_switch:
 
     ; Restore segment registers
     pop gs

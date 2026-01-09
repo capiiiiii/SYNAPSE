@@ -9,6 +9,7 @@
 #include <kernel/heap.h>
 #include <kernel/process.h>
 #include <kernel/scheduler.h>
+#include <kernel/timer.h>
 #include <kernel/elf.h>
 
 /* Multiboot information structure */
@@ -24,6 +25,42 @@ typedef struct {
     unsigned int mmap_addr;
     /* ... more fields not used in minimal version ... */
 } __attribute__((packed)) multiboot_info_t;
+
+static void worker_a(void) {
+    uint32_t last = 0;
+
+    while (1) {
+        uint32_t now = timer_get_ticks();
+        if (now - last >= 100) {
+            last = now;
+            /* Make the VGA prints atomic to avoid concurrent corruption. */
+            __asm__ __volatile__("cli");
+            vga_print("[A] ticks=");
+            vga_print_dec(now);
+            vga_print("\n");
+            __asm__ __volatile__("sti");
+        }
+        __asm__ __volatile__("hlt");
+    }
+}
+
+static void worker_b(void) {
+    uint32_t last = 0;
+
+    while (1) {
+        uint32_t now = timer_get_ticks();
+        if (now - last >= 137) {
+            last = now;
+            /* Make the VGA prints atomic to avoid concurrent corruption. */
+            __asm__ __volatile__("cli");
+            vga_print("[B] ticks=");
+            vga_print_dec(now);
+            vga_print("\n");
+            __asm__ __volatile__("sti");
+        }
+        __asm__ __volatile__("hlt");
+    }
+}
 
 /* Kernel main function - entry point from bootloader */
 void kernel_main(unsigned int magic, multiboot_info_t* mbi) {
@@ -63,9 +100,8 @@ void kernel_main(unsigned int magic, multiboot_info_t* mbi) {
     idt_init();
     vga_print("    IDT loaded successfully\n");
 
-    /* Enable interrupts */
-    __asm__ __volatile__("sti");
-    vga_print("[+] Interrupts enabled\n");
+    /* Keep interrupts disabled until Phase 2 initialization is complete. */
+    __asm__ __volatile__("cli");
 
     /* Phase 2: Memory Management */
     vga_set_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
@@ -94,6 +130,16 @@ void kernel_main(unsigned int magic, multiboot_info_t* mbi) {
     process_init();
     scheduler_init();
 
+    /* Create a process representing the currently running kernel context */
+    process_create_current("kernel_main");
+
+    /* Demo kernel threads */
+    process_create("worker_a", PROC_FLAG_KERNEL, worker_a);
+    process_create("worker_b", PROC_FLAG_KERNEL, worker_b);
+
+    /* Start PIT so scheduler_tick() runs from IRQ0 */
+    timer_init(100);
+
     /* Memory information */
     vga_set_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
     vga_print("\nSystem Information:\n");
@@ -117,7 +163,8 @@ void kernel_main(unsigned int magic, multiboot_info_t* mbi) {
     /* Start scheduler */
     vga_set_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
     vga_print("\nStarting scheduler...\n");
-    __asm__ __volatile__("sti"); /* Ensure interrupts are enabled */
+    vga_print("[+] Enabling interrupts\n");
+    __asm__ __volatile__("sti");
 
     /* Infinite loop - kernel should never return */
     while (1) {

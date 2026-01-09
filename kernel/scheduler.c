@@ -4,20 +4,48 @@
 #include <kernel/scheduler.h>
 #include <kernel/process.h>
 #include <kernel/vga.h>
-#include <kernel/idt.h>
-
-/* Forward declaration for process_list */
-extern process_t* process_list;
+#include <kernel/vmm.h>
 
 /* Scheduler quantum */
 static uint32_t quantum = DEFAULT_QUANTUM;
+
+static int proc_is_runnable(const process_t* proc) {
+    if (proc == 0) {
+        return 0;
+    }
+
+    if (proc->state == PROC_STATE_BLOCKED || proc->state == PROC_STATE_ZOMBIE ||
+        proc->state == PROC_STATE_STOPPED) {
+        return 0;
+    }
+
+    return 1;
+}
+
+static process_t* scheduler_pick_next(process_t* current) {
+    if (process_list == 0) {
+        return 0;
+    }
+
+    process_t* start = (current != 0 && current->next != 0) ? current->next :
+                       process_list;
+    process_t* proc = start;
+
+    do {
+        if (proc_is_runnable(proc)) {
+            return proc;
+        }
+
+        proc = proc->next;
+    } while (proc != 0 && proc != start);
+
+    return current;
+}
 
 /* Initialize scheduler */
 void scheduler_init(void) {
     vga_print("[+] Initializing Scheduler...\n");
     quantum = DEFAULT_QUANTUM;
-
-    /* Process initialization is done in process_init() */
     vga_print("    Scheduler ready\n");
 }
 
@@ -27,13 +55,11 @@ void scheduler_add_process(process_t* proc) {
         return;
     }
 
-    proc->state = PROC_STATE_READY;
-    proc->quantum = quantum;
-
-    /* Add to process ready queue */
-    if (process_get_current() == 0 || proc->pid != process_get_current()->pid) {
-        /* Already handled in process.c */
+    if (proc->state != PROC_STATE_ZOMBIE && proc->state != PROC_STATE_STOPPED) {
+        proc->state = PROC_STATE_READY;
     }
+
+    proc->quantum = quantum;
 }
 
 /* Remove process from scheduler */
@@ -43,69 +69,75 @@ void scheduler_remove_process(process_t* proc) {
     }
 
     proc->state = PROC_STATE_STOPPED;
-
-    /* Already handled in process.c */
 }
 
 /* Schedule next process (called by timer interrupt) */
-void scheduler_tick(void) {
+registers_t* scheduler_tick(registers_t* regs) {
     process_t* current = process_get_current();
 
-    if (current == 0) {
-        return;
+    /* If the recorded current process is not runnable (e.g. blocked/stopped),
+       treat it as no current so the scheduler can pick a runnable process. */
+    if (current != 0 && !proc_is_runnable(current)) {
+        /* Clear current so the existing initialization path runs and selects
+           a runnable process (if any). Also clear global current pointer. */
+        process_set_current(0);
+        current = 0;
     }
 
-    /* Decrement quantum */
-    current->quantum--;
+        if (process_list == 0) {
+            return regs;
+        }
 
-    /* If quantum expired, schedule next process */
-    if (current->quantum == 0) {
-        schedule();
+        process_set_current(process_list);
+        process_list->state = PROC_STATE_RUNNING;
+        process_list->quantum = quantum;
+        current = process_list;
     }
+
+    /* Save the current interrupt frame pointer as the process context */
+    current->esp = (uint32_t)regs;
+
+    if (current->quantum > 0) {
+        current->quantum--;
+    }
+
+    if (current->quantum > 0) {
+        return regs;
+    }
+
+    current->quantum = quantum;
+
+    process_t* next = scheduler_pick_next(current);
+    if (next == 0 || next == current) {
+        return regs;
+    }
+
+    if (next->esp == 0) {
+        return regs;
+    }
+
+    if (current->state == PROC_STATE_RUNNING) {
+        current->state = PROC_STATE_READY;
+    }
+
+    next->state = PROC_STATE_RUNNING;
+    if (next->quantum == 0) {
+        next->quantum = quantum;
+    }
+
+    vmm_switch_page_directory(next->page_dir);
+    process_set_current(next);
+    return (registers_t*)next->esp;
 }
 
-/* Force schedule */
+/* Force schedule (voluntary yield) */
 void schedule(void) {
     process_t* current = process_get_current();
-    process_t* next = 0;
-
-    /* Find next ready process */
-    if (process_list == 0) {
-        return;
-    }
-
-    /* Simple round-robin: next in list */
     if (current != 0) {
-        next = current->next;
-
-        /* Skip zombie and blocked processes */
-        while (next != 0 && (next->state == PROC_STATE_ZOMBIE ||
-               next->state == PROC_STATE_BLOCKED)) {
-            next = next->next;
-            if (next == current) {
-                break;
-            }
-        }
+        current->quantum = 0;
     }
 
-    if (next == 0 || next == current) {
-        /* No other process to run */
-        return;
-    }
-
-    /* Switch to next process */
-    if (current != 0) {
-        /* Save current state */
-        current->state = PROC_STATE_READY;
-        current->quantum = quantum;
-
-        /* Perform context switch */
-        context_switch(current, next);
-    } else {
-        /* First process */
-        current = next;
-        current->state = PROC_STATE_RUNNING;
-    }
+    __asm__ __volatile__("int $0x20");
 }
 
 /* Set quantum */
@@ -130,15 +162,12 @@ uint32_t scheduler_get_ready_count(void) {
     }
 
     process_t* start = proc;
-    while (proc != 0) {
+    do {
         if (proc->state == PROC_STATE_READY || proc->state == PROC_STATE_RUNNING) {
             count++;
         }
         proc = proc->next;
-        if (proc == start) {
-            break;
-        }
-    }
+    } while (proc != 0 && proc != start);
 
     return count;
 }

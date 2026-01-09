@@ -65,11 +65,16 @@ typedef struct process {
     uint32_t quantum;
 } process_t;
 
+typedef void (*process_entry_t)(void);
+
 /* Process list management */
 void process_init(void);
-process_t* process_create(const char* name, uint32_t flags);
+process_t* process_create(const char* name, uint32_t flags,
+                          process_entry_t entry);
+process_t* process_create_current(const char* name);
 void process_destroy(process_t* proc);
 process_t* process_get_current(void);
+void process_set_current(process_t* proc);
 process_t* process_get_list(void);
 process_t* process_find_by_pid(pid_t pid);
 
