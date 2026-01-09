@@ -109,7 +109,8 @@ void vmm_map_page(uint32_t virt_addr, uint32_t phys_addr, uint32_t flags) {
         uint32_t pt_phys = pmm_alloc_frame();
         if (pt_phys == 0) {
             vga_print("[-] Failed to allocate page table!\n");
-            return;
+            /* Allocation failure during page table creation is fatal during boot: halt to avoid enabling paging with incomplete mappings. */
+            __asm__ volatile("cli; hlt");
         }
         pt = (page_table_t*)(pt_phys + KERNEL_VIRT_START);
 
