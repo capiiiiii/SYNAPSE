@@ -128,6 +128,14 @@ registers_t* isr_handler(registers_t *regs) {
     if (regs->int_no >= 32 && regs->int_no <= 47) {
         registers_t* new_regs = regs;
 
+        /* Send EOI early to acknowledge this IRQ before any potential context switch */
+        if (regs->int_no >= 40) {
+            /* Slave PIC */
+            outb(0xA0, 0x20);
+        }
+        /* Master PIC */
+        outb(0x20, 0x20);
+
         /* IRQ0: PIT timer */
         if (regs->int_no == 32) {
             timer_increment_tick();
@@ -136,13 +144,6 @@ registers_t* isr_handler(registers_t *regs) {
                 new_regs = regs;
             }
         }
-
-        /* Send EOI */
-        if (regs->int_no >= 40) {
-            /* Slave PIC */
-            outb(0xA0, 0x20);
-        }
-        /* Master PIC */
         outb(0x20, 0x20);
 
         return new_regs;
