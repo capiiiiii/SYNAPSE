@@ -232,7 +232,9 @@ void process_destroy(process_t* proc) {
         return;
     }
 
-    /* Disable interrupts to make the list removal atomic */
+    /* Disable interrupts to make the list removal and cleanup atomic.
+       Keep interrupts disabled until after kfree to prevent use-after-free
+       if an interrupt handler accesses the process being destroyed. */
     unsigned int flags;
     asm volatile("pushf; pop %0; cli" : "=r"(flags) :: "memory");
 
@@ -250,16 +252,18 @@ void process_destroy(process_t* proc) {
         current_process = 0;
     }
 
-    /* Restore interrupts */
-    if (flags & (1 << 9)) {
-        asm volatile("sti");
-    }
-
+    /* Free the process stack and structure while interrupts are disabled.
+       This prevents ISR from accessing freed memory. */
     if ((proc->flags & PROC_FLAG_KERNEL) && proc->stack_start != 0) {
         kfree((void*)proc->stack_start);
     }
 
     kfree(proc);
+
+    /* Restore interrupts after all cleanup is complete */
+    if (flags & (1 << 9)) {
+        asm volatile("sti");
+    }
 }
 
 /* Get current process */

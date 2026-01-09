@@ -22,6 +22,7 @@ void timer_init(uint32_t frequency_hz) {
         /* Avoid division by zero; clamp to 1 Hz minimum */
         frequency_hz = 1;
     }
+    uint32_t divisor = PIT_FREQUENCY_HZ / frequency_hz;
     if (divisor > 65535) {
         divisor = 65535;
     }
