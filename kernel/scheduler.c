@@ -75,7 +75,15 @@ void scheduler_remove_process(process_t* proc) {
 registers_t* scheduler_tick(registers_t* regs) {
     process_t* current = process_get_current();
 
-    if (current == 0) {
+    /* If the recorded current process is not runnable (e.g. blocked/stopped),
+       treat it as no current so the scheduler can pick a runnable process. */
+    if (current != 0 && !proc_is_runnable(current)) {
+        /* Clear current so the existing initialization path runs and selects
+           a runnable process (if any). Also clear global current pointer. */
+        process_set_current(0);
+        current = 0;
+    }
+
         if (process_list == 0) {
             return regs;
         }
